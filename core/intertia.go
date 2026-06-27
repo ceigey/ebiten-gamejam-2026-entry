@@ -8,9 +8,13 @@ type Vec2 struct {
 }
 
 func (vec Vec2) Normalize() Vec2 {
-	length := math.Hypot(vec.X, vec.Y)
+	length := vec.Magnitude()
 	if length == 0 {
 		return Vec2{0, 0}
 	}
 	return Vec2{vec.X / length, vec.Y / length}
+}
+
+func (vec Vec2) Magnitude() float64 {
+	return math.Hypot(vec.X, vec.Y)
 }

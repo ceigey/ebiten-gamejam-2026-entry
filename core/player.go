@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -45,7 +44,7 @@ func NewPlayer(image *ebiten.Image) Player {
 	}
 }
 
-func (player *Player) Update() {
+func (player *Player) Update(state *GameState) {
 	player.Position.X += player.Inertia.X
 	player.Position.Y += player.Inertia.Y
 
@@ -68,7 +67,6 @@ func (player *Player) Update() {
 	}
 
 	normalized := inputvec.Normalize()
-	fmt.Printf("Normalized: %v\n", normalized)
 
 	player.Inertia.X += (normalized.X * player.ThrusterPower)
 	player.Inertia.Y += (normalized.Y * player.ThrusterPower)
@@ -83,9 +81,12 @@ func (player *Player) Update() {
 		player.Inertia.Y = 0
 	}
 
-	mx, my := ebiten.CursorPosition()
+	mxi, myi := ebiten.CursorPosition()
+	mx, my := float64(mxi), float64(myi)
+	mx += state.Camera.X
+	my += state.Camera.Y
 
-	targetRotation := math.Atan2(float64(my)-player.Position.Y, float64(mx)-player.Position.X)
+	targetRotation := math.Atan2(my-player.Position.Y, mx-player.Position.X)
 
 	difference := AngleDifferenceRadians(player.Rotation, targetRotation)
 
@@ -99,7 +100,9 @@ func (player *Player) Update() {
 	}
 }
 
-func (player *Player) Draw(screen *ebiten.Image) {
+func (player *Player) Draw(state GameState, screen *ebiten.Image) {
+
+	camera := state.Camera
 
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(-32, -32)
@@ -110,7 +113,8 @@ func (player *Player) Draw(screen *ebiten.Image) {
 	op.GeoM.Translate(player.Position.X, player.Position.Y)
 	// op.GeoM.
 	// screen.DrawImage(img, op)
-	screen.DrawImage(subimg.(*ebiten.Image), op)
+	// screen.DrawImage(subimg.(*ebiten.Image), op)
+	camera.Draw(subimg.(*ebiten.Image), op, screen)
 	// Drawing sight cone
 	// https://www.bbc.co.uk/bitesize/articles/zyjtfdm#z27hfdm
 	// https://www.omnicalculator.com/math/right-triangle-side-angle
@@ -126,9 +130,11 @@ func (player *Player) Draw(screen *ebiten.Image) {
 
 	// https://ebitengine.org/en/examples/vector.html
 	var path vector.Path
-	path.MoveTo(float32(player.Position.X), float32(player.Position.Y))
-	path.LineTo(float32(player.Position.X+adjacentLeft), float32(player.Position.Y+oppositeLeft))
-	path.LineTo(float32(player.Position.X+adjacentRight), float32(player.Position.Y+oppositeRight))
+
+	px, py := camera.ApplyCameraTransformToPoint(player.Position.X, player.Position.Y)
+	path.MoveTo(float32(px), float32(py))
+	path.LineTo(float32(px+adjacentLeft), float32(py+oppositeLeft))
+	path.LineTo(float32(px+adjacentRight), float32(py+oppositeRight))
 	path.Close()
 
 	coneOp := &vector.DrawPathOptions{}
@@ -138,6 +144,9 @@ func (player *Player) Draw(screen *ebiten.Image) {
 	coneOp.Blend = ebiten.BlendSourceOver
 	vector.FillPath(screen, &path, nil, coneOp)
 	// vector.StrokeLine(screen, float32(player.Position.X), float32(player.Position.Y))
+
+	zoomFactor := 1 - player.Inertia.Magnitude()/100
+	state.Camera.ZoomFactor = zoomFactor
 }
 
 // https://stackoverflow.com/a/28037434
