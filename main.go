@@ -44,7 +44,7 @@ func init() {
 type Game struct{}
 
 func (g *Game) Update() error {
-	peekAhead := 0.0 // 50.0
+	peekAhead := 30.0 // 50.0
 	inertiaBias := 10.0
 	cam.LookAt(
 		state.Player.Position.X+math.Cos(state.Player.Rotation)*peekAhead+state.Player.Inertia.X*inertiaBias,
