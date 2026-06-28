@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"image/color"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	exampleimages "github.com/hajimehoshi/ebiten/v2/examples/resources/images"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/setanarut/kamera/v2"
 )
@@ -33,8 +31,12 @@ func init() {
 	}
 
 	// https://ebitengine.org/en/examples/infinitescroll.html
-	bgRaw, _, err := image.Decode(bytes.NewReader(exampleimages.Tile_png))
-	bg = ebiten.NewImageFromImage(bgRaw)
+	// bgRaw, _, err := image.Decode(bytes.NewReader(exampleimages.Tile_png))
+	bg, _, err = ebitenutil.NewImageFromFile("3rdparty/scigho-water-plus.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// bg = ebiten.NewImageFromImage(bgTileset)
 
 	state = core.GameState{
 		Player: core.NewPlayer(img),
@@ -87,31 +89,50 @@ func main() {
 	}
 }
 
-// I'm not 100% thrilled with what's going on here
+// Draws a test background for the game because I'm lazy
 func drawTestBg(state *core.GameState, screen *ebiten.Image) {
+	ticks := ebiten.Tick()
+	if ticks%60 == 0 {
+		if state.BackgroundCellFlip == 1 {
+			state.BackgroundCellFlip = 0
+		} else {
+			state.BackgroundCellFlip = 1
+		}
+	}
+	cells := []*ebiten.Image{
+		// bg.SubImage(image.Rect(0, 96, 0+16, 96+16)).(*ebiten.Image),
+		bg.SubImage(image.Rect(112, 0, 112+16*2, 0+16)).(*ebiten.Image),
+		// bg.SubImage(image.Rect(112, 32, 112+16, 32+16)).(*ebiten.Image),
+		// bg.SubImage(image.Rect(112+16, 32, 112+32, 32+16)).(*ebiten.Image),
+	}
 	repeat := 20
 	parallaxFactor := 0.75
+	scale := 10.0
 
 	zoomFactor := state.Camera.ZoomFactor / 2
 
-	w := float64(bg.Bounds().Dx()) * zoomFactor
-	h := float64(bg.Bounds().Dy()) * zoomFactor
+	w := 16 * 2 * zoomFactor //float64(bg.Bounds().Dx()) * zoomFactor
+	h := 16 * zoomFactor     //float64(bg.Bounds().Dy()) * zoomFactor
 
 	offsetX := state.Camera.X * parallaxFactor * zoomFactor
 	offsetY := state.Camera.Y * parallaxFactor * zoomFactor
 
-	for j := range 10 {
+	fmt.Printf("%0.2f %0.2f\n", offsetX, offsetY)
+
+	for j := range repeat {
 		for i := range repeat {
+			cell := cells[(j+i+state.BackgroundCellFlip)%1]
 			op := &ebiten.DrawImageOptions{}
-			op.ColorScale.SetR(0.7)
-			op.ColorScale.SetG(0.8)
-			op.ColorScale.SetB(0.9)
+			op.ColorScale.SetR(0.4)
+			op.ColorScale.SetG(0.7)
+			op.ColorScale.SetB(1.0)
+			op.GeoM.Scale(scale, scale)
 			op.GeoM.Scale(zoomFactor, zoomFactor)
 			op.GeoM.Translate(
-				w*float64(i-repeat/2)-offsetX,
-				h*float64(j-repeat/2)-offsetY,
+				w*scale*float64(i)-offsetX,
+				h*scale*float64(j)-offsetY,
 			)
-			screen.DrawImage(bg, op)
+			screen.DrawImage(cell, op)
 		}
 	}
 }
