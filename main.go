@@ -70,7 +70,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{R: 77, G: 155, B: 230})
 	// drawTestBg(&state, screen)
 	mx, my := ebiten.CursorPosition()
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f, Mouse: %d, %d, Azim: %0.2f", ebiten.ActualTPS(), mx, my, state.Player.Rotation*57.2958))
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f, Mouse: %d, %d, Azim: %0.2f, Player X: %0.2f, Y: %0.2f", ebiten.ActualTPS(), mx, my, state.Player.Rotation*57.2958, state.Player.Position.X, state.Player.Position.Y))
 	state.Player.Draw(&state, screen)
 }
 
