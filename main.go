@@ -6,7 +6,6 @@ import (
 	"image/color"
 	_ "image/png"
 	"log"
-	"math"
 	"mygame/core"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -54,10 +53,9 @@ func init() {
 type Game struct{}
 
 func (g *Game) Update() error {
-	peekAhead := 50.0 // 50.0
-	inertiaBias := 10.0
-	cameraTargetX := state.Player.Position.X + math.Cos(state.Player.Rotation)*peekAhead + state.Player.Inertia.X*inertiaBias
-	cameraTargetY := state.Player.Position.Y + math.Sin(state.Player.Rotation)*peekAhead + state.Player.Inertia.Y*inertiaBias
+	cameraBias := state.Player.LookAheadInertiaBias()
+	cameraTargetX := state.Player.Position.X + cameraBias.X
+	cameraTargetY := state.Player.Position.Y + cameraBias.Y
 	cam.LookAt(cameraTargetX, cameraTargetY)
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyT) {
@@ -70,10 +68,10 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{R: 77, G: 155, B: 230})
-	drawTestBg(&state, screen)
+	// drawTestBg(&state, screen)
 	mx, my := ebiten.CursorPosition()
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f, Mouse: %d, %d, Azim: %0.2f", ebiten.ActualTPS(), mx, my, state.Player.Rotation*57.2958))
-	state.Player.Draw(state, screen)
+	state.Player.Draw(&state, screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -101,8 +99,11 @@ func drawTestBg(state *core.GameState, screen *ebiten.Image) {
 	}
 	cells := []*ebiten.Image{
 		// bg.SubImage(image.Rect(0, 96, 0+16, 96+16)).(*ebiten.Image),
-		bg.SubImage(image.Rect(112, 0, 112+16*2, 0+16)).(*ebiten.Image),
+		// bg.SubImage(image.Rect(112, 0, 112+16*2, 0+16)).(*ebiten.Image),
 		// bg.SubImage(image.Rect(112, 32, 112+16, 32+16)).(*ebiten.Image),
+		// bg.SubImage(image.Rect(96, 80, 96+16, 80+16)).(*ebiten.Image),
+		// bg.SubImage(image.Rect(144, 112, 144+16, 112+16)).(*ebiten.Image),
+		bg.SubImage(image.Rect(32, 32, 80, 48)).(*ebiten.Image),
 		// bg.SubImage(image.Rect(112+16, 32, 112+32, 32+16)).(*ebiten.Image),
 	}
 	repeat := 20
@@ -111,21 +112,21 @@ func drawTestBg(state *core.GameState, screen *ebiten.Image) {
 
 	zoomFactor := state.Camera.ZoomFactor / 2
 
-	w := 16 * 2 * zoomFactor //float64(bg.Bounds().Dx()) * zoomFactor
+	w := 16 * 1 * zoomFactor //float64(bg.Bounds().Dx()) * zoomFactor
 	h := 16 * zoomFactor     //float64(bg.Bounds().Dy()) * zoomFactor
 
 	offsetX := state.Camera.X * parallaxFactor * zoomFactor
 	offsetY := state.Camera.Y * parallaxFactor * zoomFactor
 
-	fmt.Printf("%0.2f %0.2f\n", offsetX, offsetY)
+	// fmt.Printf("%0.2f %0.2f\n", offsetX, offsetY)
 
 	for j := range repeat {
 		for i := range repeat {
 			cell := cells[(j+i+state.BackgroundCellFlip)%1]
 			op := &ebiten.DrawImageOptions{}
-			op.ColorScale.SetR(0.4)
-			op.ColorScale.SetG(0.7)
-			op.ColorScale.SetB(1.0)
+			// op.ColorScale.SetR(0.4)
+			// op.ColorScale.SetG(0.7)
+			// op.ColorScale.SetB(1.0)
 			op.GeoM.Scale(scale, scale)
 			op.GeoM.Scale(zoomFactor, zoomFactor)
 			op.GeoM.Translate(
