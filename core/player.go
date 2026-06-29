@@ -158,7 +158,7 @@ func (player *Player) Draw(state *GameState, screen *ebiten.Image) {
 	zoomFactor := 1 - player.Inertia.Magnitude()/100
 	state.Camera.ZoomFactor = zoomFactor
 
-	player.drawEnginePlumes(state, screen)
+	player.DrawThrusterPlumes(state, screen)
 }
 
 // https://stackoverflow.com/a/28037434

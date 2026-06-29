@@ -8,46 +8,46 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-type EngineOutlet struct {
+type Thruster struct {
 	Position Vec2
 	Angle    float64
 }
 
-func (player *Player) EngineOutlets() [8]EngineOutlet {
-	leftRev := EngineOutlet{
+func (player *Player) Thrusters() [8]Thruster {
+	leftRev := Thruster{
 		Position: Vec2{X: 19, Y: 20},
 		Angle:    0.0,
 	}
-	leftA := EngineOutlet{
+	leftA := Thruster{
 		Position: Vec2{X: 11, Y: 38},
 		Angle:    270.0,
 	}
-	leftB := EngineOutlet{
+	leftB := Thruster{
 		Position: Vec2{X: 11, Y: 49},
 		Angle:    270.0,
 	}
-	leftMain := EngineOutlet{
+	leftMain := Thruster{
 		Position: Vec2{X: 19, Y: 64},
 		Angle:    180.0,
 	}
-	rightRev := EngineOutlet{
+	rightRev := Thruster{
 		Position: Vec2{X: 45, Y: 20},
 		Angle:    0.0,
 	}
-	rightA := EngineOutlet{
+	rightA := Thruster{
 		Position: Vec2{X: 53, Y: 38},
 		Angle:    90.0,
 	}
-	rightB := EngineOutlet{
+	rightB := Thruster{
 		Position: Vec2{X: 53, Y: 49},
 		Angle:    90.0,
 	}
-	rightMain := EngineOutlet{
+	rightMain := Thruster{
 		Position: Vec2{X: 45, Y: 64},
 		Angle:    180.0,
 	}
 
-	engineOutlets := [8]EngineOutlet{
+	thrusters := [8]Thruster{
 		leftRev,
 		leftA,
 		leftB,
@@ -58,25 +58,25 @@ func (player *Player) EngineOutlets() [8]EngineOutlet {
 		rightMain,
 	}
 
-	return engineOutlets
+	return thrusters
 }
 
-func (player *Player) drawEnginePlumes(state *GameState, screen *ebiten.Image) {
-	engineOutlets := player.EngineOutlets()
+func (player *Player) DrawThrusterPlumes(state *GameState, screen *ebiten.Image) {
+	thrusters := player.Thrusters()
 
-	for _, outlet := range engineOutlets {
+	for _, outlet := range thrusters {
 		outlet.DrawPlume(player, state, screen)
 	}
 
 }
 
-func (outlet *EngineOutlet) AngleRadians() float64 {
-	return (outlet.Angle - 90) * (math.Pi / 180.0)
+func (thruster *Thruster) AngleRadians() float64 {
+	return (thruster.Angle - 90) * (math.Pi / 180.0)
 }
 
-func (outlet *EngineOutlet) PositionRelativeToPlayer(player *Player) Vec2 {
-	localX := outlet.Position.X - 32
-	localY := outlet.Position.Y - 32
+func (thruster *Thruster) PositionRelativeToPlayer(player *Player) Vec2 {
+	localX := thruster.Position.X - 32
+	localY := thruster.Position.Y - 32
 	// I had to look up this trigonometry, I need to study harder
 	rotatedX := localX*math.Cos(player.AdjustedRotation()) - localY*math.Sin(player.AdjustedRotation())
 	rotatedY := localX*math.Sin(player.AdjustedRotation()) + localY*math.Cos(player.AdjustedRotation())
@@ -89,16 +89,16 @@ func (outlet *EngineOutlet) PositionRelativeToPlayer(player *Player) Vec2 {
 	}
 }
 
-func (outlet *EngineOutlet) AbsoluteRotation(player *Player) float64 {
-	return outlet.AngleRadians() + player.Rotation
+func (thruster *Thruster) AbsoluteRotation(player *Player) float64 {
+	return thruster.AngleRadians() + player.Rotation
 }
 
-func (outlet *EngineOutlet) PreparePlumeGeometry(player *Player, thrustFactor float64) (*ebiten.Image, *ebiten.DrawImageOptions) {
+func (thruster *Thruster) PreparePlumeGeometry(player *Player, thrustFactor float64) (*ebiten.Image, *ebiten.DrawImageOptions) {
 	jitterFactor := 0.75 + rand.Float64()/4
 	plumeFactor := thrustFactor * jitterFactor
 
-	adjustedPosition := outlet.PositionRelativeToPlayer(player)
-	absoluteRotation := outlet.AbsoluteRotation(player)
+	adjustedPosition := thruster.PositionRelativeToPlayer(player)
+	absoluteRotation := thruster.AbsoluteRotation(player)
 
 	subimg := player.Image.SubImage(image.Rect(0, 80, 16, 96)).(*ebiten.Image)
 	op := &ebiten.DrawImageOptions{}
@@ -109,14 +109,16 @@ func (outlet *EngineOutlet) PreparePlumeGeometry(player *Player, thrustFactor fl
 	return subimg, op
 }
 
-func (outlet *EngineOutlet) DrawPlume(player *Player, state *GameState, screen *ebiten.Image) {
+// func (outlet *Thruster) Calculate
+
+func (thruster *Thruster) DrawPlume(player *Player, state *GameState, screen *ebiten.Image) {
 	reverseEngines := player.Inertia.Magnitude() > 1 && player.IsBreaking
 	if !reverseEngines && player.PositionDelta.Magnitude() < 0.01 {
 		return
 	}
 
 	// Damn angular adjustments needed again because "North is West"
-	angleInRadians := outlet.AngleRadians()
+	angleInRadians := thruster.AngleRadians()
 	angleForComparison := angleInRadians
 	if reverseEngines {
 		angleForComparison -= math.Pi
@@ -139,6 +141,6 @@ func (outlet *EngineOutlet) DrawPlume(player *Player, state *GameState, screen *
 		inertiaFactor = 1.5
 	}
 
-	subimg, op := outlet.PreparePlumeGeometry(player, thrustFactor*inertiaFactor)
+	subimg, op := thruster.PreparePlumeGeometry(player, thrustFactor*inertiaFactor)
 	state.Camera.Draw(subimg, op, screen)
 }
