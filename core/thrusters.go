@@ -2,6 +2,7 @@ package core
 
 import (
 	"image"
+	_ "image/png"
 	"math"
 	"math/rand/v2"
 

@@ -3,6 +3,7 @@ package core
 import (
 	"image"
 	"image/color"
+	_ "image/png"
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
