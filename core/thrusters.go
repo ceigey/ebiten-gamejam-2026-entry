@@ -109,38 +109,65 @@ func (thruster *Thruster) PreparePlumeGeometry(player *Player, thrustFactor floa
 	return subimg, op
 }
 
-// func (outlet *Thruster) Calculate
-
-func (thruster *Thruster) DrawPlume(player *Player, state *GameState, screen *ebiten.Image) {
-	reverseEngines := player.Inertia.Magnitude() > 1 && player.IsBreaking
-	if !reverseEngines && player.PositionDelta.Magnitude() < 0.01 {
-		return
-	}
-
-	// Damn angular adjustments needed again because "North is West"
+func (thruster *Thruster) CalculateThrusterAlignment(player *Player, thrustRadians float64) float64 {
 	angleInRadians := thruster.AngleRadians()
 	angleForComparison := angleInRadians
-	if reverseEngines {
-		angleForComparison -= math.Pi
-	}
-
-	thrustIndicator := player.PositionDelta
-	if player.PositionDelta.Magnitude() < 0.01 {
-		thrustIndicator = player.Inertia
-	}
-
-	expectedThrustAngleFromDelta := math.Atan2(thrustIndicator.Y, thrustIndicator.X) - math.Pi
-
+	// if player.IsBreaking {
+	// 	angleForComparison -= math.Pi
+	// }
 	angleRelativeToPlayer := angleForComparison + player.AdjustedRotation()
-	absoluteDelta := math.Abs(AngleDifferenceRadians(angleRelativeToPlayer, expectedThrustAngleFromDelta))
-	similarity := math.Max(0, 1-absoluteDelta*2/math.Pi)
+	absoluteDelta := math.Abs(AngleDifferenceRadians(angleRelativeToPlayer, thrustRadians))
+	alignment := math.Max(0, 1-absoluteDelta*2/math.Pi)
+	return alignment
+}
 
-	thrustFactor := similarity
-	inertiaFactor := player.Inertia.Magnitude() / 10
-	if reverseEngines {
-		inertiaFactor = 1.5
+func (thruster *Thruster) DrawPlume(player *Player, state *GameState, screen *ebiten.Image) {
+	if player.PositionDelta.Magnitude() > 0.5 {
+		thrustIndicator := player.PositionDelta
+		expectedThrustAngleFromDelta := math.Atan2(thrustIndicator.Y, thrustIndicator.X) - math.Pi
+		alignment := thruster.CalculateThrusterAlignment(player, expectedThrustAngleFromDelta)
+		inertiaFactor := player.Inertia.Magnitude() / 10
+
+		subimg, op := thruster.PreparePlumeGeometry(player, alignment*inertiaFactor)
+		state.Camera.Draw(subimg, op, screen)
 	}
 
-	subimg, op := thruster.PreparePlumeGeometry(player, thrustFactor*inertiaFactor)
-	state.Camera.Draw(subimg, op, screen)
+	if player.IsBreaking {
+		thrustIndicator := player.Inertia.Reverse()
+		expectedThrustAngleFromDelta := math.Atan2(thrustIndicator.Y, thrustIndicator.X) - math.Pi
+		alignment := thruster.CalculateThrusterAlignment(player, expectedThrustAngleFromDelta)
+		inertiaFactor := player.Inertia.Magnitude() / 7.5
+
+		subimg, op := thruster.PreparePlumeGeometry(player, alignment*inertiaFactor)
+		state.Camera.Draw(subimg, op, screen)
+	}
+
+	// reverseEngines := player.Inertia.Magnitude() > 1 && player.IsBreaking
+	// if !reverseEngines && player.PositionDelta.Magnitude() < 0.01 {
+	// 	return
+	// }
+
+	// thrustIndicator := player.PositionDelta
+	// if player.PositionDelta.Magnitude() < 0.01 {
+	// 	thrustIndicator = player.Inertia
+	// }
+
+	// expectedThrustAngleFromDelta := math.Atan2(thrustIndicator.Y, thrustIndicator.X) - math.Pi
+
+	// inertiaFactor := player.Inertia.Magnitude() / 10
+	// if reverseEngines {
+	// 	inertiaFactor = 1.5
+	// }
+
+	// // Damn angular adjustments needed again because "North is West"
+	// // angleInRadians := thruster.AngleRadians()
+	// // angleForComparison := angleInRadians
+	// // if reverseEngines {
+	// // 	angleForComparison -= math.Pi
+	// // }
+
+	// alignment := thruster.CalculateThrusterAlignment(player, expectedThrustAngleFromDelta)
+
+	// subimg, op := thruster.PreparePlumeGeometry(player, alignment*inertiaFactor)
+	// state.Camera.Draw(subimg, op, screen)
 }

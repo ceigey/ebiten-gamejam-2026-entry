@@ -34,14 +34,18 @@ type Player struct {
 	DragFactor      float64
 	ThrusterPower   float64
 	IsBreaking      bool
+	MaxInertia      float64
+	BreakingPower   float64
 }
 
 func NewPlayer(image *ebiten.Image) Player {
 	return Player{
 		Position:      Vec2{X: 360, Y: 180},
 		Image:         image,
-		DragFactor:    0.95,
+		DragFactor:    0.99,
 		ThrusterPower: 0.75,
+		BreakingPower: 0.1,
+		MaxInertia:    17.0,
 	}
 }
 
@@ -64,7 +68,7 @@ func (player *Player) Update(state *GameState) {
 		inputvec.X += 1
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyShift) {
-		breakingFactor = 0.75
+		breakingFactor -= player.BreakingPower
 		player.IsBreaking = true
 	} else {
 		player.IsBreaking = false
@@ -84,6 +88,11 @@ func (player *Player) Update(state *GameState) {
 	}
 	if math.Abs(player.Inertia.Y) < 0.1 {
 		player.Inertia.Y = 0
+	}
+
+	if player.Inertia.Magnitude() > player.MaxInertia {
+		normalized := player.Inertia.Normalize()
+		player.Inertia = normalized.Multiply(player.MaxInertia)
 	}
 
 	// cameraBias := player.LookAheadInertiaBias()
@@ -176,7 +185,7 @@ func AngleDifferenceRadians(angle1 float64, angle2 float64) float64 {
 
 func (player *Player) LookAheadInertiaBias() Vec2 {
 	peekAhead := 50.0 // 50.0
-	inertiaBias := 10.0
+	inertiaBias := 5.0
 	return Vec2{
 		X: math.Cos(player.Rotation)*peekAhead + player.Inertia.X*inertiaBias,
 		Y: math.Sin(player.Rotation)*peekAhead + player.Inertia.Y*inertiaBias,
